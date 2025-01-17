@@ -1,7 +1,12 @@
+# Import necessary libraries
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 from fractions import Fraction
+import os
+
+current_directory = os.getcwd()  # Get the current working directory
+csv_file = os.path.join(current_directory, "product_data.csv")  # Save the CSV in the current directory
 
 # Define categories and their corresponding items
 categories = {
@@ -20,8 +25,9 @@ categories = {
 for category, items in categories.items():
     categories[category] = sorted(items)
 
-# CSV file to store data (you can change the path if necessary)
-csv_file = "product_data.csv"
+# Initialize a set to track custom products added in Tab 1
+if "custom_products" not in st.session_state:
+    st.session_state["custom_products"] = []
 
 # CSS for styling
 background_image_css = """
@@ -39,7 +45,6 @@ background_image_css = """
     }
 </style>
 """
-
 
 st.markdown(background_image_css, unsafe_allow_html=True)
 
@@ -75,7 +80,7 @@ with tab1:
     3. **Enter the Quantity Distributed**: You can enter whole numbers for dry products or products that are easier to count. You may use fractions (e.g., `2` or `3/4`) to indicate how full the crates are for products that are harder to count like produce.
     4. Once you've entered the information, click **Submit** to save the data.
     """)
-    
+
     # Select a category
     category = st.selectbox(
         "Select Category", 
@@ -118,9 +123,10 @@ with tab1:
 
     # Handle submission
     if submit_button:
-        # Save data to session state
-        st.session_state['product'] = custom_product_name
-        st.session_state['quantity'] = initial_quantity
+        # Save custom product name if applicable
+        if selected_product == "Other (Custom Product)" and custom_product_name:
+            st.session_state["custom_products"].append(custom_product_name)
+
         st.success(f"Product '{custom_product_name}' in category '{category}' added with initial quantity: {initial_quantity}")
 
         # Save data to CSV file
@@ -129,7 +135,9 @@ with tab1:
             "Date": today,
             "Category": category,
             "Product": custom_product_name,
-            "Total Distributed": initial_quantity  # Update to "Total Distributed"
+            "Product Distributed": initial_quantity,
+            "Product Left": 0,
+            "Total Product Distributed": initial_quantity
         }
         
         # Convert to DataFrame
@@ -139,32 +147,30 @@ with tab1:
         try:
             existing_data = pd.read_csv(csv_file)
         except FileNotFoundError:
-            # If the file doesn't exist, create a new one
-            existing_data = pd.DataFrame(columns=["Date", "Category", "Product", "Total Distributed"])
+            existing_data = pd.DataFrame(columns=["Date", "Category", "Product", "Product Distributed", "Product Left", "Total Product Distributed"])
 
-        # Concatenate new data with the existing data
         updated_data = pd.concat([existing_data, new_entry], ignore_index=True)
-        # Group by 'Date', 'Category', and 'Product', and sum the 'Total Distributed' column
-        grouped_data = updated_data.groupby(["Date", "Category", "Product"], as_index=False).sum()
-
-        # Save the grouped data to CSV
-        grouped_data.to_csv(csv_file, index=False)
+        updated_data.to_csv(csv_file, index=False)
 
 # Tab 2: Data Overview
 with tab2:
     st.markdown("""
     ### Instructions for Updating Products Left at the End of the Day
     1. **Select a Category**: Choose the category of the product you want to update from the dropdown.
-    2. **Select a Product**: After selecting a category, pick a product from the list of available items.
+    2. **Select a Product**: After selecting a category, pick a product from the list of available items or enter a custom product by selecting "Other (Custom Product)".
     3. **Enter the Remaining Quantity**: Input the quantity of the selected product that is left at the end of the day. Like tab 1, you can enter both whole numbers or fractions (e.g., `2` or `3/4`) for products distributed in crates.
     4. Once you've entered the remaining quantity, click **Update Quantities** to save the data.
     5. The total quantity distributed will automatically update, reflecting the total products distributed per day.
     6. **Note**: If the products left exceed the total quantity distributed, an error will be shown.
     """)
 
-    # Load existing data from CSV
     try:
+        # Load existing data from CSV
         data = pd.read_csv(csv_file)
+
+        # Ensure required columns exist
+        if "Product Left" not in data.columns:
+            data["Product Left"] = 0
 
         # Select category and product for updating remaining quantity
         category_tab2 = st.selectbox(
@@ -172,17 +178,24 @@ with tab2:
             options=list(categories.keys())
         )
         
-        # Update list of products based on selected category
-        products_tab2 = categories[category_tab2]
-        
+        # Update list of products based on selected category, including custom products
+        products_tab2 = categories[category_tab2] + st.session_state["custom_products"]
+
+        # Select product with "Other (Custom Product)" option
         selected_product_tab2 = st.selectbox(
             f"Select a product from {category_tab2} to update the remaining quantity:",
-            options=products_tab2
+            options=products_tab2 + ["Other (Custom Product)"]
         )
+
+        # Check if custom product is selected
+        if selected_product_tab2 == "Other (Custom Product)":
+            custom_product_name_tab2 = st.text_input("Enter custom product name:")
+        else:
+            custom_product_name_tab2 = selected_product_tab2
 
         # Input the "Products Left" quantity (fractions allowed)
         products_left_input = st.text_input(
-            f"Enter the number of '{selected_product_tab2}' left at the end of the day (fractions allowed):"
+            f"Enter the number of '{custom_product_name_tab2}' left at the end of the day (fractions allowed):"
         )
         if products_left_input:
             products_left = handle_fraction_input(products_left_input)
@@ -199,40 +212,33 @@ with tab2:
             # Filter data for today's selected product and category
             product_data = data[
                 (data["Category"] == category_tab2) & 
-                (data["Product"] == selected_product_tab2) & 
+                (data["Product"] == custom_product_name_tab2) & 
                 (data["Date"] == today_date)
             ]
             
             if not product_data.empty:
-                # If the product already exists for today, update the total distributed quantity
-                total_distributed = product_data["Total Distributed"].values[0]
-                total_left = products_left
-                
-                # Ensure that the "remaining quantity" doesn't exceed the "distributed quantity"
-                if total_left > total_distributed:
-                    st.error(f"The remaining quantity cannot exceed the distributed quantity for '{selected_product_tab2}'.")
-                else:
-                    # Subtract the remaining quantity from the distributed quantity
-                    total_quantity = total_distributed - total_left
-                    
-                    # Update the value in the DataFrame
-                    data.loc[
-                        (data["Category"] == category_tab2) &
-                        (data["Product"] == selected_product_tab2) &
-                        (data["Date"] == today_date), "Total Distributed"
-                    ] = total_quantity
-                    
-                    # Save the updated data back to the CSV file
-                    data.to_csv(csv_file, index=False)
-                    
-                    # Show success message
-                    st.success(f"Quantity for '{selected_product_tab2}' updated successfully!")
-
-                    # Only display the updated dataset
-                    st.markdown("### Updated Data:")
-                    st.dataframe(data.sort_values(by='Date', ascending=False))
-
+                index = product_data.index[0]
+                data.at[index, "Product Left"] = products_left
+                data.at[index, "Total Product Distributed"] = (
+                    data.at[index, "Product Distributed"] - products_left
+                )
             else:
-                st.warning(f"No product data found for '{selected_product_tab2}' today. Please add the product first.")
+                new_row = {
+                    "Date": today_date,
+                    "Category": category_tab2,
+                    "Product": custom_product_name_tab2,
+                    "Product Distributed": 0,
+                    "Product Left": products_left,
+                    "Total Product Distributed": -products_left
+                }
+                data = pd.concat([data, pd.DataFrame([new_row])], ignore_index=True)
+
+            # Save the updated data back to the CSV file
+            data.to_csv(csv_file, index=False)
+
+            st.success(f"Quantity for '{custom_product_name_tab2}' updated successfully!")
+            st.markdown("### Updated Data:")
+            st.dataframe(data.sort_values(by='Date', ascending=False))
+            st.info(f"The CSV file has been updated and saved to: {csv_file}")
     except FileNotFoundError:
         st.warning("No data available.")
