@@ -21,13 +21,24 @@ categories = {
                       "Floss"]
 }
 
+# Empty categories in session state for other category
+if 'categories' not in st.session_state:
+    st.session_state.categories = {
+        "Produce": [],
+        "Meat": [],
+        "Dairy": [],
+        "Canned/Jarred Foods": [],
+        "Dry/Baking Goods": [],
+        "Personal Care": []
+    }
+
+
+
 # Sort items in each category
 for category, items in categories.items():
     categories[category] = sorted(items)
 
-# Initialize a set to track custom products added in Tab 1
-if "custom_products" not in st.session_state:
-    st.session_state["custom_products"] = []
+
 
 # CSS for styling
 background_image_css = """
@@ -52,7 +63,7 @@ st.markdown(background_image_css, unsafe_allow_html=True)
 st.title("Shelf Stock Tracking System")
 
 # Tabs
-tab1, tab2 = st.tabs(["Products Distributed", "Products Left At End Of Day/Data Overview"])
+tab1, tab2, tab3 = st.tabs(["Products Distributed", "Products Left At End Of Day/Data Overview", "Data Spreadsheet"])
 
 # Initialize session state for category, product, and quantity if not already set
 if 'category' not in st.session_state:
@@ -124,9 +135,9 @@ with tab1:
     # Handle submission
     if submit_button:
         # Save custom product name if applicable
-        if selected_product == "Other (Custom Product)" and custom_product_name:
-            st.session_state["custom_products"].append(custom_product_name)
-
+        if selected_product == "Other (Custom Product)" and (custom_product_name not in st.session_state.categories[category]): # no more duplicate names
+            st.session_state.categories[category].append(custom_product_name)
+            
         st.success(f"Product '{custom_product_name}' in category '{category}' added with initial quantity: {initial_quantity}")
 
         # Save data to CSV file
@@ -150,7 +161,11 @@ with tab1:
             existing_data = pd.DataFrame(columns=["Date", "Category", "Product", "Product Distributed", "Product Left", "Total Product Distributed"])
 
         updated_data = pd.concat([existing_data, new_entry], ignore_index=True)
-        updated_data.to_csv(csv_file, index=False)
+        # Group by 'Date', 'Category', and 'Product', and sum the 'Total Distributed' column
+        grouped_data = updated_data.groupby(["Date", "Category", "Product"], as_index=False).sum()
+
+        # Save the grouped data to CSV
+        grouped_data.to_csv(csv_file, index=False)
 
 # Tab 2: Data Overview
 with tab2:
@@ -179,12 +194,12 @@ with tab2:
         )
         
         # Update list of products based on selected category, including custom products
-        products_tab2 = categories[category_tab2] + st.session_state["custom_products"]
+        products_tab2 = categories[category_tab2] + st.session_state.categories[category_tab2]
 
         # Select product with "Other (Custom Product)" option
         selected_product_tab2 = st.selectbox(
             f"Select a product from {category_tab2} to update the remaining quantity:",
-            options=products_tab2 + ["Other (Custom Product)"]
+            options=sorted(products_tab2) 
         )
 
         # Check if custom product is selected
@@ -237,8 +252,20 @@ with tab2:
             data.to_csv(csv_file, index=False)
 
             st.success(f"Quantity for '{custom_product_name_tab2}' updated successfully!")
-            st.markdown("### Updated Data:")
-            st.dataframe(data.sort_values(by='Date', ascending=False))
             st.info(f"The CSV file has been updated and saved to: {csv_file}")
     except FileNotFoundError:
         st.warning("No data available.")
+# Tab 3: CSV
+with tab3:
+    try:
+        # Load the existing data from the CSV file
+        data = pd.read_csv(csv_file)
+        
+        # Display the data in a dataframe
+        st.dataframe(data)
+        
+        # Inform user about the file location
+        st.info(f"The CSV file is located at: {csv_file}")
+    
+    except FileNotFoundError:
+        st.warning("No data available. The CSV file has not been created yet.")
