@@ -32,13 +32,9 @@ if 'categories' not in st.session_state:
         "Personal Care": []
     }
 
-
-
 # Sort items in each category
 for category, items in categories.items():
     categories[category] = sorted(items)
-
-
 
 # CSS for styling
 background_image_css = """
@@ -63,7 +59,9 @@ st.markdown(background_image_css, unsafe_allow_html=True)
 st.title("Shelf Stock Tracking System")
 
 # Tabs
-tab1, tab2, tab3 = st.tabs(["Products Distributed", "Products Left At End Of Day/Data Overview", "Data Spreadsheet"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "Products Distributed", "Products Left At End Of Day/Data Overview", 
+    "Data Spreadsheet", "Track Donated Products", "Track Spoiled Foods", "Track Menstrual Products"])
 
 # Initialize session state for category, product, and quantity if not already set
 if 'category' not in st.session_state:
@@ -269,3 +267,99 @@ with tab3:
     
     except FileNotFoundError:
         st.warning("No data available. The CSV file has not been created yet.")
+
+# Tab 4: Track Donated Products
+with tab4:
+    st.header("Track Donated Products")
+    donated_file = os.path.join(current_directory, "donated_products.csv")
+    product_name = st.text_input("Product Name", key="donated_product_name")
+    quantity = st.number_input("Quantity", min_value=1, step=1, key="donated_quantity")
+    donor_name = st.text_input("Donor Name", key="donor_name")
+    date = st.date_input("Date", value=datetime.today(), key="donated_date")
+
+    new_entry = {
+        "Product Name": product_name,
+        "Quantity": quantity,
+        "Donor Name": donor_name,
+        "Date": date.strftime("%Y-%m-%d")
+    }
+
+    if product_name and quantity and donor_name:
+        try:
+            donated_data = pd.read_csv(donated_file)
+        except FileNotFoundError:
+            donated_data = pd.DataFrame(columns=["Product Name", "Quantity", "Donor Name", "Date"])
+
+        donated_data = pd.concat([donated_data, pd.DataFrame([new_entry])], ignore_index=True)
+        donated_data.to_csv(donated_file, index=False)
+
+    st.subheader("Donated Products Log")
+    try:
+        donated_data = pd.read_csv(donated_file)
+        st.dataframe(donated_data)
+    except FileNotFoundError:
+        st.warning("No donation data available.")
+
+# Tab 5: Track Spoiled Foods
+with tab5:
+    st.header("Track Spoiled Foods")
+    spoiled_file = os.path.join(current_directory, "spoiled_food.csv")
+    food_item = st.text_input("Food Item", key="spoiled_food_item")
+    weight = st.number_input("Weight (kg)", min_value=0.1, step=0.1, key="spoiled_weight")
+    reason = st.text_input("Reason for Spoilage", key="spoiled_reason")
+    date = st.date_input("Date", value=datetime.today(), key="spoiled_date")
+
+    new_entry = {
+        "Food Item": food_item,
+        "Weight": weight,
+        "Reason": reason,
+        "Date": date.strftime("%Y-%m-%d")
+    }
+
+    if food_item and weight and reason:
+        try:
+            spoiled_data = pd.read_csv(spoiled_file)
+        except FileNotFoundError:
+            spoiled_data = pd.DataFrame(columns=["Food Item", "Weight", "Reason", "Date"])
+
+        spoiled_data = pd.concat([spoiled_data, pd.DataFrame([new_entry])], ignore_index=True)
+        spoiled_data.to_csv(spoiled_file, index=False)
+
+    st.subheader("Spoiled Foods Log")
+    try:
+        spoiled_data = pd.read_csv(spoiled_file)
+        st.dataframe(spoiled_data)
+    except FileNotFoundError:
+        st.warning("No spoilage data available.")
+
+# Tab 6: Track Menstrual Products
+with tab6:
+    st.header("Track Menstrual Products")
+    menstrual_file = os.path.join(current_directory, "menstrual_products.csv")
+    product_type = st.text_input("Product Type (e.g., Pads, Tampons)", key="menstrual_product_type")
+    quantity_donated = st.number_input("Quantity Donated", min_value=0, step=1, key="menstrual_donated_quantity")
+    quantity_distributed = st.number_input("Quantity Distributed", min_value=0, step=1, key="menstrual_distributed_quantity")
+    date = st.date_input("Date", value=datetime.today(), key="menstrual_date")
+
+    new_entry = {
+        "Product Type": product_type,
+        "Quantity Donated": quantity_donated,
+        "Quantity Distributed": quantity_distributed,
+        "Date": date.strftime("%Y-%m-%d")
+    }
+
+    if product_type and (quantity_donated or quantity_distributed):
+        try:
+            menstrual_data = pd.read_csv(menstrual_file)
+        except FileNotFoundError:
+            menstrual_data = pd.DataFrame(columns=["Product Type", "Quantity Donated", "Quantity Distributed", "Date"])
+
+        menstrual_data = pd.concat([menstrual_data, pd.DataFrame([new_entry])], ignore_index=True)
+        menstrual_data.to_csv(menstrual_file, index=False)
+
+    st.subheader("Menstrual Products Log")
+    try:
+        menstrual_data = pd.read_csv(menstrual_file)
+        st.dataframe(menstrual_data)
+    except FileNotFoundError:
+        st.warning("No menstrual product data available.")
