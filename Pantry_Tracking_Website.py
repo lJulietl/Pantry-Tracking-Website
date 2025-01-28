@@ -8,6 +8,7 @@ import os
 current_directory = os.getcwd()  # Get the current working directory
 csv_file = os.path.join(current_directory, "product_data.csv")  # Save the CSV in the current directory
 donated_file = os.path.join(current_directory, "donated_products.csv")  # File for donated products
+spoiled_file = os.path.join(current_directory, "spoiled_food.csv")  # File for spoiled food
 
 # Define categories and their corresponding items
 categories = {
@@ -62,7 +63,7 @@ st.title("Shelf Stock Tracking System")
 # Tabs
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Products Distributed", "Products Left At End Of Day/Data Overview", 
-    "Data Spreadsheet", "Track Donated Products", "Track Spoiled Foods", "Track Menstrual Products"])
+    "Track Donated Products", "Track Spoiled Foods", "Track Menstrual Products", "Data Spreadsheet"])
 
 # Initialize session state for category, product, and quantity if not already set
 if 'category' not in st.session_state:
@@ -254,23 +255,9 @@ with tab2:
             st.info(f"The CSV file has been updated and saved to: {csv_file}")
     except FileNotFoundError:
         st.warning("No data available.")
-# Tab 3: CSV
+        
+# Tab 3: Track Donated Products
 with tab3:
-    try:
-        # Load the existing data from the CSV file
-        data = pd.read_csv(csv_file)
-        
-        # Display the data in a dataframe
-        st.dataframe(data)
-        
-        # Inform user about the file location
-        st.info(f"The CSV file is located at: {csv_file}")
-    
-    except FileNotFoundError:
-        st.warning("No data available. The CSV file has not been created yet.")
-
-# Tab 4: Track Donated Products
-with tab4:
     st.header("Track Donated Products")
 
     # Date of donation
@@ -309,8 +296,6 @@ with tab4:
     # Additional notes on contents
     additional_notes = st.text_area("Additional Notes on Contents", key="additional_notes")
 
-    
-
     # Create a new entry for the donation
     new_entry = {
         "Date": date.strftime("%Y-%m-%d"),
@@ -344,74 +329,140 @@ with tab4:
         else:
             st.warning("Please fill out all required fields.")
 
-    # Display donated products log
-    st.subheader("Donated Products Log")
-    try:
-        donated_data = pd.read_csv(donated_file)
-        st.dataframe(donated_data)
-    except FileNotFoundError:
-        st.warning("No donation data available.")
-
-# Tab 5: Track Spoiled Foods
-with tab5:
+# Tab 4: Track Spoiled Foods
+with tab4:
     st.header("Track Spoiled Foods")
-    spoiled_file = os.path.join(current_directory, "spoiled_food.csv")
-    food_item = st.text_input("Food Item", key="spoiled_food_item")
-    weight = st.number_input("Weight (kg)", min_value=0.1, step=0.1, key="spoiled_weight")
-    reason = st.text_input("Reason for Spoilage", key="spoiled_reason")
+
+    # Date of spoilage
     date = st.date_input("Date", value=datetime.today(), key="spoiled_date")
 
+    # Input total item weight
+    total_weight = st.number_input("Total Item Weight (lbs.)", min_value=0.0, step=0.1, key="spoiled_total_weight")
+
+    # Source of items (multi-select)
+    source_of_items = st.multiselect(
+        "Source of Items (Select all that apply)",
+        [
+            "YFB (Yolo Food Bank)", "Daylight Foods", "Student Farm", "Aggie Compass", "Food Recovery Network (FRN)",
+            "EOP", "St Martins", "Davis Lutheran Church", "Yolo Farm 2 Fork", "Student Organization (Please specify in 'Other')",
+            "I don't know", "Other"
+        ],
+        key="spoiled_source_of_items"
+    )
+
+    # Additional input if "Other" or "Student Organization" is selected
+    if "Other" in source_of_items or "Student Organization (Please specify in 'Other')" in source_of_items:
+        source_details = st.text_input("If 'Other' or 'Student Organization', please specify:", key="spoiled_source_details")
+    else:
+        source_details = ""
+
+    # Contents (multi-select)
+    contents = st.multiselect(
+        "Contents (Select all that apply)",
+        [
+            "Fruit", "Vegetable - Greens (Lettuce/Broccoli etc.)", "Vegetable - Gourds (Squash/Pumpkins etc.)",
+            "Vegetable - Roots (Beets/Carrots/Onions etc.)", "Potatoes", "Dairy", "Bread", "Canned Foods",
+            "Plastic-packaged Foods", "Drinks (non-dairy)", "Other"
+        ],
+        key="spoiled_contents"
+    )
+
+    # Additional input if "Other" is selected in contents
+    if "Other" in contents:
+        contents_details = st.text_input("If 'Other', please specify contents:", key="spoiled_contents_details")
+    else:
+        contents_details = ""
+
+    # Additional notes about contents
+    additional_notes_contents = st.text_area("Additional Notes about Contents", key="spoiled_additional_notes_contents")
+
+    # Destination of items
+    destination = st.multiselect(
+        "Where are these items going to?",
+        ["Freedge", "Compost", "Landfill", "Other"],
+        key="spoiled_destination"
+    )
+
+    # Additional input if "Other" is selected in destination
+    if "Other" in destination:
+        destination_details = st.text_input("If 'Other', please specify destination:", key="spoiled_destination_details")
+    else:
+        destination_details = ""
+
+    # Reasons why items can't be distributed (multi-select)
+    reasons = st.multiselect(
+        "Reason(s) why We Can't Distribute It (Select all that apply)",
+        [
+            "(Produce) A Little Ugly Looking BUT is Still Suitable to Consume",
+            "Past Food Safety Recommendation Date BUT is Still Suitable to Consume",
+            "Damage to Packaging (e.g. dented cans) BUT is Still Suitable to Consume",
+            "Damage to Contents (e.g. fell on floor) BUT is Still Suitable to Consume",
+            "Other"
+        ],
+        key="spoiled_reasons"
+    )
+
+    # Additional input if "Other" is selected in reasons
+    if "Other" in reasons:
+        reasons_details = st.text_input("If 'Other', please specify reasons:", key="spoiled_reasons_details")
+    else:
+        reasons_details = ""
+
+    # Additional notes
+    additional_notes = st.text_area("Additional Notes?", key="spoiled_additional_notes")
+
+    # Create a new entry for the spoiled food
     new_entry = {
-        "Food Item": food_item,
-        "Weight": weight,
-        "Reason": reason,
-        "Date": date.strftime("%Y-%m-%d")
+        "Date": date.strftime("%Y-%m-%d"),
+        "Total Item Weight (lbs.)": total_weight,
+        "Source of Items": ", ".join(source_of_items),
+        "Source Details": source_details,
+        "Contents": ", ".join(contents),
+        "Contents Details": contents_details,
+        "Additional Notes about Contents": additional_notes_contents,
+        "Destination": ", ".join(destination),
+        "Destination Details": destination_details,
+        "Reasons": ", ".join(reasons),
+        "Reasons Details": reasons_details,
+        "Additional Notes": additional_notes
     }
 
-    if food_item and weight and reason:
-        try:
-            spoiled_data = pd.read_csv(spoiled_file)
-        except FileNotFoundError:
-            spoiled_data = pd.DataFrame(columns=["Food Item", "Weight", "Reason", "Date"])
+    # Submit button
+    submit_spoiled = st.button("Submit Spoiled Food")
 
-        spoiled_data = pd.concat([spoiled_data, pd.DataFrame([new_entry])], ignore_index=True)
-        spoiled_data.to_csv(spoiled_file, index=False)
+    # Save spoiled food details if all fields are filled and the button is clicked
+    if submit_spoiled:
+        if total_weight and source_of_items and contents and destination and reasons:
+            try:
+                spoiled_data = pd.read_csv(spoiled_file)
+            except FileNotFoundError:
+                spoiled_data = pd.DataFrame(columns=[
+                    "Date", "Total Item Weight (lbs.)", "Source of Items", "Source Details", "Contents", "Contents Details",
+                    "Additional Notes about Contents", "Destination", "Destination Details", "Reasons", "Reasons Details", "Additional Notes"
+                ])
 
-    st.subheader("Spoiled Foods Log")
-    try:
-        spoiled_data = pd.read_csv(spoiled_file)
-        st.dataframe(spoiled_data)
-    except FileNotFoundError:
-        st.warning("No spoilage data available.")
+            spoiled_data = pd.concat([spoiled_data, pd.DataFrame([new_entry])], ignore_index=True)
+            spoiled_data.to_csv(spoiled_file, index=False)
 
-# Tab 6: Track Menstrual Products
-with tab6:
+            st.success("Spoiled food details saved successfully!")
+        else:
+            st.warning("Please fill out all required fields.")
+
+# Tab 5: Track Menstrual Products
+with tab5:
     st.header("Track Menstrual Products")
-    menstrual_file = os.path.join(current_directory, "menstrual_products.csv")
-    product_type = st.text_input("Product Type (e.g., Pads, Tampons)", key="menstrual_product_type")
-    quantity_donated = st.number_input("Quantity Donated", min_value=0, step=1, key="menstrual_donated_quantity")
-    quantity_distributed = st.number_input("Quantity Distributed", min_value=0, step=1, key="menstrual_distributed_quantity")
-    date = st.date_input("Date", value=datetime.today(), key="menstrual_date")
 
-    new_entry = {
-        "Product Type": product_type,
-        "Quantity Donated": quantity_donated,
-        "Quantity Distributed": quantity_distributed,
-        "Date": date.strftime("%Y-%m-%d")
-    }
 
-    if product_type and (quantity_donated or quantity_distributed):
+# Tab 6: Data Spreadsheet
+with tab6:
+    st.header("Data Spreadsheet Overview")
+
+    files = {"Products Distributed": csv_file, "Donated Products": donated_file, "Spoiled Foods": spoiled_file}
+
+    for name, file_path in files.items():
+        st.subheader(name)
         try:
-            menstrual_data = pd.read_csv(menstrual_file)
+            data = pd.read_csv(file_path)
+            st.dataframe(data)
         except FileNotFoundError:
-            menstrual_data = pd.DataFrame(columns=["Product Type", "Quantity Donated", "Quantity Distributed", "Date"])
-
-        menstrual_data = pd.concat([menstrual_data, pd.DataFrame([new_entry])], ignore_index=True)
-        menstrual_data.to_csv(menstrual_file, index=False)
-
-    st.subheader("Menstrual Products Log")
-    try:
-        menstrual_data = pd.read_csv(menstrual_file)
-        st.dataframe(menstrual_data)
-    except FileNotFoundError:
-        st.warning("No menstrual product data available.")
+            st.warning(f"No data available for {name}.")
