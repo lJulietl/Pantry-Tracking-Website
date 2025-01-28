@@ -7,6 +7,7 @@ import os
 
 current_directory = os.getcwd()  # Get the current working directory
 csv_file = os.path.join(current_directory, "product_data.csv")  # Save the CSV in the current directory
+donated_file = os.path.join(current_directory, "donated_products.csv")  # File for donated products
 
 # Define categories and their corresponding items
 categories = {
@@ -271,28 +272,79 @@ with tab3:
 # Tab 4: Track Donated Products
 with tab4:
     st.header("Track Donated Products")
-    donated_file = os.path.join(current_directory, "donated_products.csv")
-    product_name = st.text_input("Product Name", key="donated_product_name")
-    quantity = st.number_input("Quantity", min_value=1, step=1, key="donated_quantity")
-    donor_name = st.text_input("Donor Name", key="donor_name")
-    date = st.date_input("Date", value=datetime.today(), key="donated_date")
 
+    # Date of donation
+    date = st.date_input("Date", value=datetime.today(), key="donated_date")
+    
+    # Input fields for donated products
+    product_name = st.text_input("Product Name", key="donated_product_name")
+    donation_weight = st.number_input("Donation Weight (lbs)", min_value=0.0, step=0.1, key="donation_weight")
+
+    donation_provider = st.selectbox(
+        "Donation Provider",
+        ["Aggie Compass", "Student Farm", "FRN (Food Recovery Network)", "COHO", "MU Market", "St Martins", 
+         "Davis Lutheran Church", "EOP", "Yolo Farm 2 Fork", "Student Organization", "Other"],
+        key="donation_provider"
+    )
+
+    # Additional input if "Student Organization" or "Other" is selected
+    if donation_provider in ["Student Organization", "Other"]:
+        donor_details = st.text_input("If \"Student Organization\" or \"Other\", please list donator below:", key="donor_details")
+    else:
+        donor_details = ""
+
+    # Multi-select for contents
+    donation_contents = st.multiselect(
+        "Contents",
+        ["Fruit", "Vegetables", "Bread", "Canned/Packaged Foods", "Dairy", "Drinks (non-dairy)", "Toiletries", "Menstrual Products", "Other"],
+        key="donation_contents"
+    )
+
+    # Additional input if "Other" is selected in contents
+    if "Other" in donation_contents:
+        other_contents_details = st.text_input("If \"Other\", please specify contents:", key="other_contents_details")
+    else:
+        other_contents_details = ""
+
+    # Additional notes on contents
+    additional_notes = st.text_area("Additional Notes on Contents", key="additional_notes")
+
+    
+
+    # Create a new entry for the donation
     new_entry = {
+        "Date": date.strftime("%Y-%m-%d"),
         "Product Name": product_name,
-        "Quantity": quantity,
-        "Donor Name": donor_name,
-        "Date": date.strftime("%Y-%m-%d")
+        "Donation Weight (lbs)": donation_weight,
+        "Donation Provider": donation_provider,
+        "Donor Details": donor_details,
+        "Contents": ", ".join(donation_contents),
+        "Other Contents Details": other_contents_details,
+        "Additional Notes": additional_notes
     }
 
-    if product_name and quantity and donor_name:
-        try:
-            donated_data = pd.read_csv(donated_file)
-        except FileNotFoundError:
-            donated_data = pd.DataFrame(columns=["Product Name", "Quantity", "Donor Name", "Date"])
+    # Submit button
+    submit_donation = st.button("Submit Donation")
 
-        donated_data = pd.concat([donated_data, pd.DataFrame([new_entry])], ignore_index=True)
-        donated_data.to_csv(donated_file, index=False)
+    # Save donation details if all fields are filled and the button is clicked
+    if submit_donation:
+        if product_name and donation_weight and donation_provider:
+            try:
+                donated_data = pd.read_csv(donated_file)
+            except FileNotFoundError:
+                donated_data = pd.DataFrame(columns=[
+                    "Date", "Product Name", "Donation Weight (lbs)", "Donation Provider", "Donor Details", "Contents", 
+                    "Other Contents Details", "Additional Notes"
+                ])
 
+            donated_data = pd.concat([donated_data, pd.DataFrame([new_entry])], ignore_index=True)
+            donated_data.to_csv(donated_file, index=False)
+
+            st.success(f"Donation details for '{product_name}' saved successfully!")
+        else:
+            st.warning("Please fill out all required fields.")
+
+    # Display donated products log
     st.subheader("Donated Products Log")
     try:
         donated_data = pd.read_csv(donated_file)
