@@ -7,6 +7,7 @@ import os
 
 current_directory = os.getcwd()  # Get the current working directory
 csv_file = os.path.join(current_directory, "product_data.csv")  # Save the CSV in the current directory
+Wastecsv_file = os.path.join(current_directory, "waste_data.csv")  # Save the CSV in the current directory
 
 # Define categories and their corresponding items
 categories = {
@@ -31,7 +32,34 @@ if 'categories' not in st.session_state:
         "Dry/Baking Goods": [],
         "Personal Care": []
     }
+# Added this
 
+source = [
+    'YFB (Yolo Food Bank)', 
+    'Daylight Foods',
+    'Student Farm',
+    'Aggie Compass',
+    'Food Recovery Network (FRN)',
+    'EOP',
+    'St Martins',
+    'Davis Lutheran Church',
+    'Yolo Farm 2 Fork',
+    'Student Organization (Please specify in "Other")',
+    "I don't know",
+    'Other Source'
+    ]
+
+contents = ['Fruit',
+            'Vegetable - Greens (Lettuce/Broccli etc.)',
+            'Vegetable - Gourds (Squash/Pumpkins etc.)',
+            'Vegetable - Roots (Beets/Carrots/Onions etc.)',
+            'Potatoes',
+            'Dairy',
+            'Bread',
+            'Canned Foods',
+            'Plastic-packaged Foods',
+            'Drinks (non-dairy)',
+            'Other Contents']
 
 
 # Sort items in each category
@@ -62,8 +90,9 @@ st.markdown(background_image_css, unsafe_allow_html=True)
 # Title
 st.title("Shelf Stock Tracking System")
 
+# ADDDDDEDDDD NEW TABBB
 # Tabs
-tab1, tab2, tab3 = st.tabs(["Products Distributed", "Products Left At End Of Day/Data Overview", "Data Spreadsheet"])
+tab1, tab2, tab3, tab4 = st.tabs(["Products Distributed", "Products Left At End Of Day/Data Overview", "Data Spreadsheet", "Food Waste Distribution Log"])
 
 # Initialize session state for category, product, and quantity if not already set
 if 'category' not in st.session_state:
@@ -269,3 +298,77 @@ with tab3:
     
     except FileNotFoundError:
         st.warning("No data available. The CSV file has not been created yet.")
+
+
+#NEWWWWW
+# Food Waste tab
+with tab4:
+    # Input Food Waste
+    initial_waste = 'Not entered'
+    initial_waste_input = st.text_input("Total Item Weight (lbs.)")
+    if initial_waste_input:
+        initial_waste = handle_fraction_input(initial_waste_input)
+    else:
+        initial_waste = 0
+
+    # Source of items
+    st.write('Source of Items (Select all that apply)')
+    st.session_state.source = 'Not Entered'
+    st.session_state.booleanSource = []
+    st.session_state.sourceList = source
+    for i in source:
+        st.session_state.booleanSource.append(st.checkbox(i))
+    
+    if st.session_state.booleanSource[11] == True:
+        st.session_state.sourceList[11] = st.text_input("Enter Other Source:")
+
+    st.session_state.source = [category for is_true, category in zip(st.session_state.booleanSource, st.session_state.sourceList) if is_true]
+
+    # Contents
+    st.write('Contents (Select all that apply)')
+    st.session_state.contents = 'Not Entered'
+    st.session_state.booleanContents = []
+    st.session_state.contentsList = contents
+    for i in contents:
+        st.session_state.booleanContents.append(st.checkbox(i))
+
+    if st.session_state.booleanContents[10] == True:
+        st.session_state.contentsList[10] = st.text_input("Enter Other Contents:")
+        
+    st.session_state.contents = [category for is_true, category in zip(st.session_state.booleanContents, st.session_state.contentsList) if is_true]
+
+
+    waste_button = st.button("Submit Food Waste")
+    # Handle submission
+    if waste_button:
+        st.success("Food Waste Logged")
+
+        # Save data to CSV file
+        today = datetime.today().strftime('%Y-%m-%d')  # Get today's date
+        WasteData = {
+            "Date": today,
+            "Waste": initial_waste,
+            "Source": st.session_state.source,
+            "Contents": st.session_state.contents
+        }
+        
+        # Convert to DataFrame
+        new_entry = pd.DataFrame([WasteData])
+        
+        # If CSV file exists, append new data, otherwise create a new CSV file
+        try:
+            existing_data = pd.read_csv(Wastecsv_file)
+        except FileNotFoundError:
+            existing_data = pd.DataFrame(columns=["Date", "Waste", "Source", "Contents"])
+
+        updated_data = pd.concat([existing_data, new_entry], ignore_index=True)
+        
+        updated_data.to_csv(Wastecsv_file, index=False)
+        
+        # Display the data in a dataframe
+    data = pd.read_csv(Wastecsv_file)
+    st.dataframe(data)
+
+
+
+
