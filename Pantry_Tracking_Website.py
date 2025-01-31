@@ -61,9 +61,9 @@ st.markdown(background_image_css, unsafe_allow_html=True)
 st.title("Shelf Stock Tracking System")
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "Products Distributed", "Products Left At End Of Day/Data Overview", 
-    "Track Donated Products", "Track Spoiled Foods", "Track Menstrual Products", "Data Spreadsheet"])
+    "Track Donated Products", "Track Spoiled Foods", "Data Spreadsheet"])
 
 # Initialize session state for category, product, and quantity if not already set
 if 'category' not in st.session_state:
@@ -448,13 +448,9 @@ with tab4:
         else:
             st.warning("Please fill out all required fields.")
 
-# Tab 5: Track Menstrual Products
-with tab5:
-    st.header("Track Menstrual Products")
-
 
 # Tab 6: Data Spreadsheet
-with tab6:
+with tab5:
     st.header("Data Spreadsheet Overview")
 
     files = {"Products Distributed": csv_file, "Donated Products": donated_file, "Spoiled Foods": spoiled_file}
