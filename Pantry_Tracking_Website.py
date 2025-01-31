@@ -300,7 +300,7 @@ with tab3:
         st.warning("No data available. The CSV file has not been created yet.")
 
 
-#NEWWWWW
+
 # Food Waste tab
 with tab4:
     # Input Food Waste
