@@ -453,6 +453,9 @@ with tab4:
 with tab5:
     st.header("Plan B Questionaire")
     
+    # Automatically get current date and time
+    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
     age = st.number_input("How old are you?", min_value=0, step=1, key="age_key")
     gender = st.selectbox(
         "What is your gender identity?", ["Male", "Female", "Other"], key="gender_key")
@@ -489,6 +492,7 @@ with tab5:
         
         # Create a new data entry
         planB_Data = {
+            "Date": current_datetime,
             "Age": age,
             "Gender Identity": gender,
             "Racial Background": ", ".join(race),
@@ -504,7 +508,7 @@ with tab5:
         try:
             existing_data = pd.read_csv(planB_csv)
         except FileNotFoundError:
-            existing_data = pd.DataFrame(columns=["Age", "Gender Identity", "Racial Background", 
+            existing_data = pd.DataFrame(columns=["Date", "Age", "Gender Identity", "Racial Background", 
                                                   "Financial Background", "Annual Income", 
                                                   "Barrier From Obtaining Plan B"])
         
