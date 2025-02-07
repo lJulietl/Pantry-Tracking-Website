@@ -9,6 +9,7 @@ current_directory = os.getcwd()  # Get the current working directory
 csv_file = os.path.join(current_directory, "product_data.csv")  # Save the CSV in the current directory
 donated_file = os.path.join(current_directory, "donated_products.csv")  # File for donated products
 spoiled_file = os.path.join(current_directory, "spoiled_food.csv")  # File for spoiled food
+planB_csv = os.path.join(current_directory, "planB_data.csv")
 
 # Define categories and their corresponding items
 categories = {
@@ -33,6 +34,7 @@ if 'categories' not in st.session_state:
         "Dry/Baking Goods": [],
         "Personal Care": []
     }
+
 
 # Sort items in each category
 for category, items in categories.items():
@@ -63,7 +65,7 @@ st.title("Shelf Stock Tracking System")
 # Tabs
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Products Distributed", "Products Left At End Of Day/Data Overview", 
-    "Track Donated Products", "Track Spoiled Foods", "Track Menstrual Products", "Data Spreadsheet"])
+    "Track Donated Products", "Track Spoiled Foods", "Plan B Questionaire", "Data Spreadsheet"])
 
 # Initialize session state for category, product, and quantity if not already set
 if 'category' not in st.session_state:
@@ -448,9 +450,78 @@ with tab4:
         else:
             st.warning("Please fill out all required fields.")
 
-# Tab 5: Track Menstrual Products
 with tab5:
-    st.header("Track Menstrual Products")
+    st.header("Plan B Questionaire")
+    
+    age = st.number_input("How old are you?", min_value=0, step=1, key="age_key")
+    gender = st.selectbox(
+        "What is your gender identity?", ["Male", "Female", "Other"], key="gender_key")
+    if gender == "Other":
+        gender = st.text_input("Other:", key="other_gender_key")
+    
+    race = st.multiselect(
+        "Which of the following best describes your racial background?",
+        ["American Indian or Alaska Native", "Asian", "Black or African American", "Hispanic or Latino",
+         "Native Hawaiian or Other Pacific Islander", "White", "Two or More Races", "Other"],
+        key="race_key"
+    )
+    if "Other" in race:
+        race.remove("Other")
+        race.append(st.text_input("Other:", key="other_race_key"))
+    
+    finance = st.selectbox("Does the cost of Plan B present a financial challenge for you?",
+                           ["Yes", "Somewhat", "No"], key="finance_key")
+    
+    income = st.number_input("What is your annual income per year?")
+    
+    barrier = st.multiselect("What do you think is the main barrier of obtaining Plan B?",
+                            ["Cost", "Accessibility", "Stigma/Judgement", "Other"],
+                             key="barrier_key")
+    if "Other" in barrier:
+        barrier.remove("Other")
+        barrier.append(st.text_area("Other:", key="other_barrier_key"))
+    
+    planB_button = st.button("Submit", key="planB_key")
+    
+    # Handle submission
+    if planB_button:
+        st.success("Thank you!")
+        
+        # Create a new data entry
+        planB_Data = {
+            "Age": age,
+            "Gender Identity": gender,
+            "Racial Background": ", ".join(race),
+            "Financial Background": finance,
+            "Annual Income": income,
+            "Barrier From Obtaining Plan B": ", ".join(barrier)
+        }
+        
+        # Convert to DataFrame
+        new_entry = pd.DataFrame([planB_Data])
+        
+        # Append or create new CSV
+        try:
+            existing_data = pd.read_csv(planB_csv)
+        except FileNotFoundError:
+            existing_data = pd.DataFrame(columns=["Age", "Gender Identity", "Racial Background", 
+                                                  "Financial Background", "Annual Income", 
+                                                  "Barrier From Obtaining Plan B"])
+        
+        updated_data = pd.concat([existing_data, new_entry], ignore_index=True)
+        updated_data.to_csv(planB_csv, index=False)
+    
+    # Display stored data if available
+    if os.path.exists(planB_csv):
+        data = pd.read_csv(planB_csv)
+        st.dataframe(data)
+    else:
+        st.warning("No data available yet. Fill out the form and submit to save.")
+
+    
+    
+
+
 
 
 # Tab 6: Data Spreadsheet
