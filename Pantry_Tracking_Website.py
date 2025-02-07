@@ -35,6 +35,7 @@ if 'categories' not in st.session_state:
         "Personal Care": []
     }
 
+
 # Sort items in each category
 for category, items in categories.items():
     categories[category] = sorted(items)
