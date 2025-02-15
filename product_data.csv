@@ -1,4 +1,2 @@
-Date,Category,Product,Product Distributed,Product Left,Total Product Distributed
-2025-01-16,Produce,Apples,5.0,3,2.0
-2025-01-16,Produce,Ham,4.0,3,1.0
-2025-01-22,Meat,Pork Belly,4.0,1,3.0
+Date,Category,Product,Count Method,Product Distributed,Product Left,Total Product Distributed
+2025-02-14,Meat,Beef,Individual,6.0,3,3.0

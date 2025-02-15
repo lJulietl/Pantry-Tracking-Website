@@ -212,7 +212,10 @@ with tab1:
         else:
             custom_product_name = selected_product
             st.session_state['product'] = custom_product_name  # Update the product in session state
-    
+
+        # Add count method selection before entering quantity
+        count_method = st.radio("How it will be counted:", ["Individual", "Crates"], index=0, key="count_method_tab1")
+        
         # Input quantity (allowing fractions)
         initial_quantity_input = st.text_input("Quantity Distributed (You can enter fractions, e.g. 2.5 or 3/4):")
         if initial_quantity_input:
@@ -237,6 +240,7 @@ with tab1:
                 "Date": today,
                 "Category": category,
                 "Product": custom_product_name,
+                "Count Method": count_method,  
                 "Product Distributed": initial_quantity,
                 "Product Left": 0,
                 "Total Product Distributed": initial_quantity
@@ -249,16 +253,16 @@ with tab1:
             try:
                 existing_data = pd.read_csv(csv_file)
             except FileNotFoundError:
-                existing_data = pd.DataFrame(columns=["Date", "Category", "Product", "Product Distributed", "Product Left", "Total Product Distributed"])
+                existing_data = pd.DataFrame(columns=["Date", "Category", "Product", "Count Method", "Product Distributed", "Product Left", "Total Product Distributed"])
     
             updated_data = pd.concat([existing_data, new_entry], ignore_index=True)
             # Group by 'Date', 'Category', and 'Product', and sum the 'Total Distributed' column
-            grouped_data = updated_data.groupby(["Date", "Category", "Product"], as_index=False).sum()
+            grouped_data = updated_data.groupby(["Date", "Category", "Product", "Count Method"], as_index=False).sum()
     
             # Save the grouped data to CSV
             grouped_data.to_csv(csv_file, index=False)
 
-# Tab 2: Data Overview
+# Tab 2: Data Update
 with tab2:
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -320,7 +324,10 @@ with tab2:
                 custom_product_name_tab2 = st.text_input("Enter custom product name:")
             else:
                 custom_product_name_tab2 = selected_product_tab2
-    
+                
+            # Add count method selection before entering quantity left
+            count_method_tab2 = st.radio("How it will be counted:", ["Individual", "Crates"], index=0, key="count_method_tab2")
+            
             # Input the "Products Left" quantity (fractions allowed)
             products_left_input = st.text_input(
                 f"Enter the number of '{custom_product_name_tab2}' left at the end of the day (fractions allowed):"
@@ -355,6 +362,7 @@ with tab2:
                         "Date": today_date,
                         "Category": category_tab2,
                         "Product": custom_product_name_tab2,
+                        "Count Method": count_method_tab2,
                         "Product Distributed": 0,
                         "Product Left": products_left,
                         "Total Product Distributed": -products_left
@@ -606,6 +614,7 @@ with tab4:
             else:
                 st.warning("Please fill out all required fields.")
 
+# Plan B tab
 with tab5:
     st.header("Plan B Questionaire")
     
