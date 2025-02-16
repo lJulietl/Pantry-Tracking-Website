@@ -1,4 +1,3 @@
-
 # Import necessary libraries
 import streamlit as st
 import pandas as pd
@@ -10,6 +9,7 @@ import os
 
 current_directory = os.getcwd()  # Get the current working directory
 csv_file = os.path.join(current_directory, "product_data.csv")  # Save the CSV in the current directory
+menstrual_file = os.path.join(current_directory, "menstrual_products.csv")
 donated_file = os.path.join(current_directory, "donated_products.csv")  # File for donated products
 spoiled_file = os.path.join(current_directory, "spoiled_food.csv")  # File for spoiled food
 planB_csv = os.path.join(current_directory, "planB_data.csv")
@@ -72,7 +72,7 @@ st.markdown(
         top: 0;
         left: 0;
         width: 100%;
-        background-color: rgba(255, 255, 255, 0.5);  /* Slightly transparent white */
+        background-color: rgba(255, 255, 255, 0.8);  /* Slightly transparent white */
         padding: 10px 20px;
         font-size: 50px;
         font-weight: bold;
@@ -80,7 +80,7 @@ st.markdown(
         border-bottom: 2px solid #ddd; /* Adds a subtle separator */
     }
     .block-container {
-        padding-top: 70px; /* Push content down to avoid overlap */
+        padding-top: 120px; /* Ensures content starts below the fixed title */
     }
     </style>
     <div class="fixed-title">Pantry Tracking Dashboard</div>
@@ -94,32 +94,9 @@ st.markdown(
 st.markdown(
     """
     <style>
-    /* Force text in all input fields, dropdowns, and buttons to be black */
-    .stTabs [role="tab"] {
-        color: black !important;
-    }
-    html, body, .stMarkdown, .stTextInput, .stSelectbox, .stHeader, .stSubHeader {
-        color: black !important;
-    }
-    h1, h2, h3, h4, h5, h6 .stHeader {
-        color: black !important;
-    }
-
-   label[data-testid="stWidgetLabel"] {
-        color: black !important; 
-    }
-    div[data-testid="stAlert"] {
-        background-color: #ffcccc !important; /* Light red background */
-        border-left: 5px solid red !important; /* Red left border */
-    }
-    
-    div[data-testid="stAlert"] p {
-        color: red !important; 
-    }
-    
-    /* Ensure background does not override the text color */
-    .stApp {
+    body {
         background-color: white !important;
+        color: black !important;
     }
     </style>
     """,
@@ -130,9 +107,9 @@ st.markdown(
 
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "Products Distributed", "Products Left (EoD)", 
-    "Track Donated Products", "Track Spoiled Foods", "Plan B Questionaire", "Data Spreadsheets"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "Products Distributed", "Products Left (EoD)", "Track Donated Products"
+    ,"Track Spoiled Foods", "Track Menstrual Products", "Plan B Questionaire", "Data Spreadsheets"])
 
 # Initialize session state for category, product, and quantity if not already set
 if 'category' not in st.session_state:
@@ -177,10 +154,11 @@ with tab1:
     if st.session_state.authenticated == True:
         st.header('Instructions for Adding Products')
         st.markdown("""
-        1. **Select a Category** from the dropdown
-        2. **Select a Product** from the list of items in the selected category. You can also enter a custom product by selecting "Other (Custom Product)".
-        3. **Enter the Quantity Distributed**: You can enter whole numbers for dry products or products that are easier to count. You may use fractions (e.g., `2` or `3/4`) to indicate how full the crates are for products that are harder to count like produce.
-        4. Once you've entered the information, click **Submit** to save the data.
+        1. **Select a Category** from the dropdown list
+        2. **Select a Product** or enter a custom product by selecting "Other (Custom Product)".
+        3. **Select How It Will be Counted**: Whether it be individually or by crates
+        4. **Enter the Quantity Distributed**: You can enter whole numbers for products that are easier to count. You may use fractions (e.g., `0.75` or `3/4`) to indicate how full the crates are for products that are harder to count like produce
+        5. Once you've entered the information, click **Submit** to save the data
         """)
     
         # Select a category
@@ -288,12 +266,13 @@ with tab2:
     if st.session_state.authenticated == True:
         st.header('Instructions for Updating Products Left at the End of the Day')
         st.markdown("""
-        1. **Select a Category**: Choose the category of the product you want to update from the dropdown.
-        2. **Select a Product**: After selecting a category, pick a product from the list of available items or enter a custom product by selecting "Other (Custom Product)".
-        3. **Enter the Remaining Quantity**: Input the quantity of the selected product that is left at the end of the day. Like tab 1, you can enter both whole numbers or fractions (e.g., `2` or `3/4`) for products distributed in crates.
-        4. Once you've entered the remaining quantity, click **Update Quantities** to save the data.
-        5. The total quantity distributed will automatically update, reflecting the total products distributed per day.
-        6. **Note**: If the products left exceed the total quantity distributed, an error will be shown.
+        1. **Select a Category**: Choose the category of the product you want to update from the dropdown
+        2. **Select a Product**: Select a product or enter a custom product by selecting "Other (Custom Product)"
+        3. **Select How It Will be Counted**: Whether it be individually or by crates  
+        4. **Enter the Remaining Quantity**: Input the quantity of the selected product that is left at the end of the day. Like tab 1, you can enter both whole numbers or fractions (e.g., `0.75` or `3/4`) for products distributed in crates
+        5. Once you've entered the remaining quantity, click **Update Quantities** to save the data
+        6. The total quantity distributed will automatically update, reflecting the total products distributed per day
+        7. **Note**: If the products left exceed the total quantity distributed, an error will be shown
         """)
     
         try:
@@ -613,9 +592,91 @@ with tab4:
                 st.success("Spoiled food details saved successfully!")
             else:
                 st.warning("Please fill out all required fields.")
+# Menstrual Products Tab
+with tab5:
+    st.header("Intructions for Menstrual Products Tracking")
+    st.markdown("""
+        1. **Select a Brand**: Please be aware if the product you're tracking is donated or not. The Pantry's usual brands are Aunt Flow, Organic Initiative, June, and Saalt. Any other brand is considered donated
+        2. **Select Type of Product**: Select the type of product you are distributing
+        3. **Input the Quantity**: Number of boxes if Pads/Tampons or number distributed if Cups or Disks
+        4. **Note**: The second dropdown menu will update dynamically based on the brand selected in the first dropdown. Similarly, the third dropdown menu will change based on the selection made in the second dropdown
+        """)
+    # Automatically get current date and time
+    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    brand = st.selectbox(
+    "What brand is this?", ["Organic Initiative", "Aunt Flow", "June", "Saalt", "Donated"]
+    )
+# Initialize product_type variable
+    product_type = None
+
+# Conditional dropdowns based on brand selection
+    if brand == "Organic Initiative":
+        product_type = st.selectbox(
+        "If Organic Initiative, what type of product is it?",
+        ["Light Tampons", "Regular Tampons", "Super Tampons"]
+    )
+    elif brand == "Aunt Flow":
+        product_type = st.selectbox(
+        "If Aunt Flow, what type of product is it?",
+        ["Pads", "Tampons"]
+    )
+    elif brand == "June":
+        product_type = st.selectbox(
+        "If June, what type of product is it?",
+        ["Small Menstrual Cups", "Large Menstrual Cups"]
+    )
+    elif brand == "Saalt":
+        product_type = st.selectbox(
+        "If Saalt, what type of product is it?",
+        ["Small Menstrual Cups", "Large Menstrual Cups", "Small Menstrual Discs", "Large Menstrual Discs"]
+    )
+    elif brand == "Donated":
+        product_type = st.selectbox(
+        "If donated, what type of product is it?", 
+        ["Pads", "Tampons", "Cups", "Disks"]
+    )
+
+# Show "Number of Boxes Distributed" only if Pads or Tampons is selected
+    if product_type in ["Pads", "Tampons", "Light Tampons", "Regular Tampons", "Super Tampons"]:
+        quantity = st.number_input(
+        "Number of Boxes Distributed for Pads/Tampons", min_value=1, step=1
+    )
+    elif product_type in ["Cups", "Disks", "Large Menstrual Cups", "Small Menstrual Cups", 
+                          "Small Menstrual Discs", "Large Menstrual Discs"]:
+        quantity = st.number_input(
+        "Quantity Distributed for Cups/Disks", min_value=1, step=1
+    )
+    menstrual_button = st.button("Submit", key="menstrual_key")
+    if menstrual_button:
+        st.success("Products Saved Successfully!")
+        
+        # Create a new data entry
+        menstrual_Data = {
+            "Date": current_datetime,
+            "Brand": brand,
+            "Product Type": product_type,
+            "Quantity": quantity,
+        }
+        
+        # Convert to DataFrame
+        new_entry = pd.DataFrame([menstrual_Data])
+        
+        # Append or create new CSV
+        try:
+            existing_data = pd.read_csv(menstrual_file)
+        except FileNotFoundError:
+            existing_data = pd.DataFrame(columns=["Date", "Brand", "Product Type", "Quantity"])
+        
+        updated_data = pd.concat([existing_data, new_entry], ignore_index=True)
+        updated_data.to_csv(menstrual_file, index=False)
+    
+    
+
+
+
 
 # Plan B tab
-with tab5:
+with tab6:
     st.header("Plan B Questionaire")
     
     # Automatically get current date and time
@@ -653,7 +714,7 @@ with tab5:
     
     # Handle submission
     if planB_button:
-        st.success("Thank you!")
+        st.success("Products Saved Successfully!")
         
         # Create a new data entry
         planB_Data = {
@@ -688,11 +749,12 @@ with tab5:
 
 
 
-# Tab 6: Data Spreadsheets
-with tab6:
+# Tab 7: Data Spreadsheets
+with tab7:
     st.header("Data Spreadsheet Overview")
 
-    files = {"Products Distributed": csv_file, "Donated Products": donated_file, "Spoiled Foods": spoiled_file}
+    files = {"Products Distributed": csv_file, "Donated Products": donated_file, "Spoiled Foods": spoiled_file,
+             "Menstrual Products": menstrual_file}
 
     for name, file_path in files.items():
         st.subheader(name)
@@ -701,6 +763,3 @@ with tab6:
             st.dataframe(data)
         except FileNotFoundError:
             st.warning(f"No data available for {name}.")
-
-
-
