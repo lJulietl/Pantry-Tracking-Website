@@ -64,29 +64,7 @@ background_image_css = """
 st.markdown(background_image_css, unsafe_allow_html=True)
 
 # Title
-st.markdown(
-    """
-    <style>
-    .fixed-title {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        background-color: rgba(255, 255, 255, 0.8);  /* Slightly transparent white */
-        padding: 10px 20px;
-        font-size: 50px;
-        font-weight: bold;
-        z-index: 100;
-        border-bottom: 2px solid #ddd; /* Adds a subtle separator */
-    }
-    .block-container {
-        padding-top: 120px; /* Ensures content starts below the fixed title */
-    }
-    </style>
-    <div class="fixed-title">Pantry Tracking Dashboard</div>
-    """,
-    unsafe_allow_html=True
-)
+st.title("Pantry Tracking Dashboard")
 
 
 
@@ -94,14 +72,38 @@ st.markdown(
 st.markdown(
     """
     <style>
-    body {
-        background-color: white !important;
+    /* Force all text inside radio buttons to be black */
+    div[role="radiogroup"] * {
         color: black !important;
     }
+
+    /* Ensure all text in widgets, headers, and labels is black */
+    .stTabs [role="tab"], 
+    html, body, .stMarkdown, .stTextInput, .stSelectbox, .stHeader, .stSubHeader, 
+    h1, h2, h3, h4, h5, h6, .stHeader, label[data-testid="stWidgetLabel"] {
+        color: black !important;
+    }
+
+    /* General Notification Styling */
+    div[data-testid="stNotification"] {
+        padding: 10px !important;
+        border-radius: 5px !important;
+        color: black !important;
+    }
+
+
+    
+
+    /* Ensure background does not override the text color */
+    .stApp {
+        background-color: white !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
+
+
 
 
 
