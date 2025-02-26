@@ -615,7 +615,8 @@ with tab5:
     if brand == "Organic Initiative":
         product_type = st.selectbox(
         "If Organic Initiative, what type of product is it?",
-        ["Light Tampons", "Regular Tampons", "Super Tampons"]
+        ["Regular Pads", "Super Pads", "Overnight Pads", "Light Tampons", "Regular Tampons", "Super Tampons",
+         "Super Plus Tampons", "Panty Liners"]
     )
     elif brand == "Aunt Flow":
         product_type = st.selectbox(
@@ -635,13 +636,15 @@ with tab5:
     elif brand == "Donated":
         product_type = st.selectbox(
         "If donated, what type of product is it?", 
-        ["Pads", "Tampons", "Cups", "Disks"]
+        ["Panty Liners", "Pads", "Tampons", "Cups", "Disks"]
     )
 
 # Show "Number of Boxes Distributed" only if Pads or Tampons is selected
-    if product_type in ["Pads", "Tampons", "Light Tampons", "Regular Tampons", "Super Tampons"]:
+    if product_type in ["Regular Pads", "Super Pads", "Overnight Pads", 
+                        "Pads", "Tampons", "Light Tampons", "Regular Tampons", "Super Tampons",
+                        "Super Plus Tampons", "Panty Liners"]:
         quantity = st.number_input(
-        "Number of Boxes Distributed for Pads/Tampons", min_value=1, step=1
+        "Number of Boxes Distributed for Liners/Pads/Tampons", min_value=1, step=1
     )
     elif product_type in ["Cups", "Disks", "Large Menstrual Cups", "Small Menstrual Cups", 
                           "Small Menstrual Discs", "Large Menstrual Discs"]:
