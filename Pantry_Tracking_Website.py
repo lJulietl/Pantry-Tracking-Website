@@ -757,6 +757,7 @@ with tab6:
 # Tab 7: Data Spreadsheets
 with tab7:
     st.header("Data Spreadsheet Overview")
+    st.header("The current working directory is '{current_directory}'")
 
     files = {"Products Distributed": csv_file, "Donated Products": donated_file, "Spoiled Foods": spoiled_file,
              "Menstrual Products": menstrual_file}
