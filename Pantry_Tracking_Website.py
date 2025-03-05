@@ -596,6 +596,26 @@ with tab4:
                 st.warning("Please fill out all required fields.")
 # Menstrual Products Tab
 with tab5:
+    
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+        
+    # Show login if not authenticated
+    if st.session_state.authenticated == False:
+        st.title("🔒 Restricted Access")
+    
+        # Login button
+        with st.form("login_form4"):
+            password_input = st.text_input("Enter Password:")
+            submit_button = st.form_submit_button("Login")  # Pressing Enter submits the form
+    
+            if submit_button:
+                if password_input == PASSWORD:
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect password. Try again.")
+    
     st.header("Intructions for Menstrual Products Tracking")
     st.markdown("""
         1. **Select a Brand**: Please be aware if the product you're tracking is donated or not. The Pantry's usual brands are Aunt Flow, Organic Initiative, June, and Saalt. Any other brand is considered donated
@@ -757,7 +777,6 @@ with tab6:
 # Tab 7: Data Spreadsheets
 with tab7:
     st.header("Data Spreadsheet Overview")
-    st.header("The current working directory is '{current_directory}'")
 
     files = {"Products Distributed": csv_file, "Donated Products": donated_file, "Spoiled Foods": spoiled_file,
              "Menstrual Products": menstrual_file}
