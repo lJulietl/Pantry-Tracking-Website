@@ -615,85 +615,86 @@ with tab5:
                     st.rerun()
                 else:
                     st.error("Incorrect password. Try again.")
-    
-    st.header("Intructions for Menstrual Products Tracking")
-    st.markdown("""
-        1. **Select a Brand**: Please be aware if the product you're tracking is donated or not. The Pantry's usual brands are Aunt Flow, Organic Initiative, June, and Saalt. Any other brand is considered donated
-        2. **Select Type of Product**: Select the type of product you are distributing
-        3. **Input the Quantity**: Number of boxes if Pads/Tampons or number distributed if Cups or Disks
-        4. **Note**: The second dropdown menu will update dynamically based on the brand selected in the first dropdown. Similarly, the third dropdown menu will change based on the selection made in the second dropdown
-        """)
-    # Automatically get current date and time
-    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    brand = st.selectbox(
-    "What brand is this?", ["Organic Initiative", "Aunt Flow", "June", "Saalt", "Donated"]
-    )
-# Initialize product_type variable
-    product_type = None
+        # Show the page content only if authenticated
+    if st.session_state.authenticated == True:
+        st.header("Instructions for Menstrual Products Tracking")
+        st.markdown("""
+            1. **Select a Brand**: Please be aware if the product you're tracking is donated or not. The Pantry's usual brands are Aunt Flow, Organic Initiative, June, and Saalt. Any other brand is considered donated
+            2. **Select Type of Product**: Select the type of product you are distributing
+            3. **Input the Quantity**: Number of boxes if Pads/Tampons or number distributed if Cups or Disks
+            4. **Note**: The second dropdown menu will update dynamically based on the brand selected in the first dropdown. Similarly, the third dropdown menu will change based on the selection made in the second dropdown
+            """)
+        # Automatically get current date and time
+        current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        brand = st.selectbox(
+        "What brand is this?", ["Organic Initiative", "Aunt Flow", "June", "Saalt", "Donated"]
+        )
+    # Initialize product_type variable
+        product_type = None
 
-# Conditional dropdowns based on brand selection
-    if brand == "Organic Initiative":
-        product_type = st.selectbox(
-        "If Organic Initiative, what type of product is it?",
-        ["Regular Pads", "Super Pads", "Overnight Pads", "Light Tampons", "Regular Tampons", "Super Tampons",
-         "Super Plus Tampons", "Panty Liners"]
-    )
-    elif brand == "Aunt Flow":
-        product_type = st.selectbox(
-        "If Aunt Flow, what type of product is it?",
-        ["Pads", "Tampons"]
-    )
-    elif brand == "June":
-        product_type = st.selectbox(
-        "If June, what type of product is it?",
-        ["Small Menstrual Cups", "Large Menstrual Cups"]
-    )
-    elif brand == "Saalt":
-        product_type = st.selectbox(
-        "If Saalt, what type of product is it?",
-        ["Small Menstrual Cups", "Large Menstrual Cups", "Small Menstrual Discs", "Large Menstrual Discs"]
-    )
-    elif brand == "Donated":
-        product_type = st.selectbox(
-        "If donated, what type of product is it?", 
-        ["Panty Liners", "Pads", "Tampons", "Cups", "Disks"]
-    )
+    # Conditional dropdowns based on brand selection
+        if brand == "Organic Initiative":
+            product_type = st.selectbox(
+            "If Organic Initiative, what type of product is it?",
+            ["Regular Pads", "Super Pads", "Overnight Pads", "Light Tampons", "Regular Tampons", "Super Tampons",
+            "Super Plus Tampons", "Panty Liners"]
+        )
+        elif brand == "Aunt Flow":
+            product_type = st.selectbox(
+            "If Aunt Flow, what type of product is it?",
+            ["Pads", "Tampons"]
+        )
+        elif brand == "June":
+            product_type = st.selectbox(
+            "If June, what type of product is it?",
+            ["Small Menstrual Cups", "Large Menstrual Cups"]
+        )
+        elif brand == "Saalt":
+            product_type = st.selectbox(
+            "If Saalt, what type of product is it?",
+            ["Small Menstrual Cups", "Large Menstrual Cups", "Small Menstrual Discs", "Large Menstrual Discs"]
+        )
+        elif brand == "Donated":
+            product_type = st.selectbox(
+            "If donated, what type of product is it?", 
+            ["Panty Liners", "Pads", "Tampons", "Cups", "Disks"]
+        )
 
-# Show "Number of Boxes Distributed" only if Pads or Tampons is selected
-    if product_type in ["Regular Pads", "Super Pads", "Overnight Pads", 
-                        "Pads", "Tampons", "Light Tampons", "Regular Tampons", "Super Tampons",
-                        "Super Plus Tampons", "Panty Liners"]:
-        quantity = st.number_input(
-        "Number of Boxes Distributed for Liners/Pads/Tampons", min_value=1, step=1
-    )
-    elif product_type in ["Cups", "Disks", "Large Menstrual Cups", "Small Menstrual Cups", 
-                          "Small Menstrual Discs", "Large Menstrual Discs"]:
-        quantity = st.number_input(
-        "Quantity Distributed for Cups/Disks", min_value=1, step=1
-    )
-    menstrual_button = st.button("Submit", key="menstrual_key")
-    if menstrual_button:
-        st.success("Products Saved Successfully!")
-        
-        # Create a new data entry
-        menstrual_Data = {
-            "Date": current_datetime,
-            "Brand": brand,
-            "Product Type": product_type,
-            "Quantity": quantity,
-        }
-        
-        # Convert to DataFrame
-        new_entry = pd.DataFrame([menstrual_Data])
-        
-        # Append or create new CSV
-        try:
-            existing_data = pd.read_csv(menstrual_file)
-        except FileNotFoundError:
-            existing_data = pd.DataFrame(columns=["Date", "Brand", "Product Type", "Quantity"])
-        
-        updated_data = pd.concat([existing_data, new_entry], ignore_index=True)
-        updated_data.to_csv(menstrual_file, index=False)
+    # Show "Number of Boxes Distributed" only if Pads or Tampons is selected
+        if product_type in ["Regular Pads", "Super Pads", "Overnight Pads", 
+                            "Pads", "Tampons", "Light Tampons", "Regular Tampons", "Super Tampons",
+                            "Super Plus Tampons", "Panty Liners"]:
+            quantity = st.number_input(
+            "Number of Boxes Distributed for Liners/Pads/Tampons", min_value=1, step=1
+        )
+        elif product_type in ["Cups", "Disks", "Large Menstrual Cups", "Small Menstrual Cups", 
+                            "Small Menstrual Discs", "Large Menstrual Discs"]:
+            quantity = st.number_input(
+            "Quantity Distributed for Cups/Disks", min_value=1, step=1
+        )
+        menstrual_button = st.button("Submit", key="menstrual_key")
+        if menstrual_button:
+            st.success("Products Saved Successfully!")
+            
+            # Create a new data entry
+            menstrual_Data = {
+                "Date": current_datetime,
+                "Brand": brand,
+                "Product Type": product_type,
+                "Quantity": quantity,
+            }
+            
+            # Convert to DataFrame
+            new_entry = pd.DataFrame([menstrual_Data])
+            
+            # Append or create new CSV
+            try:
+                existing_data = pd.read_csv(menstrual_file)
+            except FileNotFoundError:
+                existing_data = pd.DataFrame(columns=["Date", "Brand", "Product Type", "Quantity"])
+            
+            updated_data = pd.concat([existing_data, new_entry], ignore_index=True)
+            updated_data.to_csv(menstrual_file, index=False)
     
     
 
