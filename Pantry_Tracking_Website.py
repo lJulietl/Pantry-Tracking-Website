@@ -605,7 +605,7 @@ with tab5:
         st.title("🔒 Restricted Access")
     
         # Login button
-        with st.form("login_form4"):
+        with st.form("login_form5"):
             password_input = st.text_input("Enter Password:")
             submit_button = st.form_submit_button("Login")  # Pressing Enter submits the form
     
