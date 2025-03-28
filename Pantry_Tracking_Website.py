@@ -4,28 +4,32 @@ import pandas as pd
 from datetime import datetime
 from fractions import Fraction
 import os
+import time
 
 
 
 current_directory = os.getcwd()  # Get the current working directory
 csv_file = os.path.join(current_directory, "product_data.csv")  # Save the CSV in the current directory
+walk_in_menu = os.path.join(current_directory, "walk_in_menu.csv")
+removed_products_file = os.path.join(current_directory, "removed_products.csv")
 menstrual_file = os.path.join(current_directory, "menstrual_products.csv")
-donated_file = os.path.join(current_directory, "donated_products.csv")  # File for donated products
-spoiled_file = os.path.join(current_directory, "spoiled_food.csv")  # File for spoiled food
+donated_file = os.path.join(current_directory, "donated_products.csv")  
+spoiled_file = os.path.join(current_directory, "spoiled_food.csv")  
 planB_csv = os.path.join(current_directory, "planB_data.csv")
 PASSWORD = "pantry"
+
 
 # Define categories and their corresponding items
 categories = {
     "Produce": ["Apples", "Bananas", "Oranges", "Persimmons",
                 "Tomatoes", "Potatoes", "Eggplants", "Onions",
-                "Zucchinis", "Carrots"],
+                "Zucchinis", "Carrots", "Beets", "Turnips", "Lettuce"],
     "Meat": ["Chicken", "Beef", "Eggs", "Fish (General)"],
     "Dairy": ["Milk", "Cheese", "Yogurt"],
     "Canned/Jarred Foods": ["Tomato Sauce", "Canned Beans", "Jam"],
     "Dry/Baking Goods": ["Flour", "Sugar", "Pasta", "Rice", "Baking Soda"],
     "Personal Care": ["Condoms", "Pads", "Tampons", "Menstrual Cups",
-                      "Floss"]
+                      "Floss", "Plan B", "Sunscreen", "Lotion"]
 }
 
 # Empty categories in session state for other category
@@ -109,8 +113,8 @@ st.markdown(
 
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "Products Distributed", "Products Left (EoD)", "Track Donated Products"
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8= st.tabs([
+    "Products Distributed", "Products Left (EoD)", "Walk In Menu", "Track Donated Products"
     ,"Track Spoiled Foods", "Track Menstrual Products", "Plan B Questionaire", "Data Spreadsheets"])
 
 # Initialize session state for category, product, and quantity if not already set
@@ -357,8 +361,10 @@ with tab2:
                 st.info(f"The CSV file has been updated and saved to: {csv_file}")
         except FileNotFoundError:
             st.warning("No data available.")
-        
-# Tab 3: Track Donated Products
+
+
+# Tab 3: Walk In Menu
+
 with tab3:
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -369,6 +375,120 @@ with tab3:
     
         # Login button
         with st.form("login_form3"):
+            password_input = st.text_input("Enter Password:")
+            submit_button = st.form_submit_button("Login")  # Pressing Enter submits the form
+    
+            if submit_button:
+                if password_input == PASSWORD:
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect password. Try again.")
+                
+    
+    if st.session_state.authenticated == True:
+        st.header('Instructions Walk In Menu')
+        st.markdown("""
+        1. **Products Currently In Stock**: Products currently stocked will be shown here
+        2. **Remove Products That Are No Longer In Stock**: Do this by clicking the "Remove" button
+        3. **Note**: After a product is removed it will no longer show on the Walk In Menu
+        """)
+
+        # Initialize session state variables
+        if "walk_in_menu" not in st.session_state:
+            st.session_state.walk_in_menu = []
+        if "removed_products_for_today" not in st.session_state:
+            st.session_state.removed_products_for_today = []
+        if "last_update_date" not in st.session_state:
+            st.session_state.last_update_date = None
+
+        # Function to reset removed products if it's a new day
+        def check_date_reset():
+            today = datetime.today().date()
+            if st.session_state.last_update_date is None or st.session_state.last_update_date != today:
+                st.session_state.removed_products_for_today = []  # Reset removed products
+                st.session_state.last_update_date = today  # Update date to today
+
+        # Load removed products from CSV
+        def load_removed_products():
+            if os.path.exists(removed_products_file):
+                try:
+                    removed_df = pd.read_csv(removed_products_file)
+                    removed_df['Date'] = pd.to_datetime(removed_df['Date']).dt.date
+                    st.session_state.removed_products_for_today = removed_df[removed_df['Date'] == datetime.today().date()]["Product"].tolist()
+                except Exception as e:
+                    st.error(f"Error loading removed products: {e}")
+                    st.session_state.removed_products_for_today = []
+
+        # Save removed products to CSV
+        def save_removed_products():
+            try:
+                removed_df = pd.DataFrame({
+                    "Product": st.session_state.removed_products_for_today,
+                    "Date": [datetime.today().date()] * len(st.session_state.removed_products_for_today)
+                })
+                removed_df.to_csv(removed_products_file, index=False)
+                print("removed_products.csv updated successfully.")
+            except Exception as e:
+                st.error(f"Error saving removed products: {e}")
+
+        # Load products and update walk-in menu
+        def load_products():
+            try:
+                df = pd.read_csv(csv_file)
+                if "Date" not in df.columns or "Product" not in df.columns:
+                    st.error("Error: 'Date' or 'Product' column missing from CSV.")
+                    return []
+
+                df["Date"] = pd.to_datetime(df["Date"], errors='coerce').dt.date
+                today = datetime.today().date()
+                today_products = df[df["Date"] == today]["Product"].dropna().unique().tolist()
+
+                # Filter out removed products
+                st.session_state.walk_in_menu = [
+                    product for product in today_products if product not in st.session_state.removed_products_for_today
+                ]
+
+                # Save updated walk-in menu
+                pd.DataFrame({"Product": st.session_state.walk_in_menu}).to_csv(walk_in_menu, index=False)
+                print("walk_in_menu.csv updated successfully with loaded products.")
+            except Exception as e:
+                st.error(f"Error loading CSV: {e}")
+                st.session_state.walk_in_menu = []
+
+        # Reset removed products and load data
+        check_date_reset()
+        load_removed_products()
+        load_products()
+
+        # Display walk-in menu
+        st.write("### Walk-In Menu:")
+        for product in st.session_state.walk_in_menu:
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"- **{product}**")
+            with col2:
+                button_key = f"remove_{product}"
+                if st.button(f"REMOVE {product}", key=button_key):
+                    st.session_state.removed_products_for_today.append(product)
+                    load_products()  # Reload updated products
+                    save_removed_products()  # Save removed products
+                    st.success(f"Product '{product}' removed from walk-in menu.")
+
+        st.write("### All Products From Today", st.session_state.walk_in_menu)
+        st.write("### Products That Are No Longer In Stock", st.session_state.removed_products_for_today)
+
+# Tab 4: Track Donated Products
+with tab4:
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+        
+    # Show login if not authenticated
+    if st.session_state.authenticated == False:
+        st.title("🔒 Restricted Access")
+    
+        # Login button
+        with st.form("login_form4"):
             password_input = st.text_input("Enter Password:")
             submit_button = st.form_submit_button("Login")  # Pressing Enter submits the form
     
@@ -453,8 +573,8 @@ with tab3:
             else:
                 st.warning("Please fill out all required fields.")
 
-# Tab 4: Track Spoiled Foods
-with tab4:
+# Tab 5: Track Spoiled Foods
+with tab5:
 
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -464,7 +584,7 @@ with tab4:
         st.title("🔒 Restricted Access")
     
         # Login button
-        with st.form("login_form4"):
+        with st.form("login_form5"):
             password_input = st.text_input("Enter Password:")
             submit_button = st.form_submit_button("Login")  # Pressing Enter submits the form
     
@@ -595,7 +715,7 @@ with tab4:
             else:
                 st.warning("Please fill out all required fields.")
 # Menstrual Products Tab
-with tab5:
+with tab6:
     
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -605,7 +725,7 @@ with tab5:
         st.title("🔒 Restricted Access")
     
         # Login button
-        with st.form("login_form5"):
+        with st.form("login_form6"):
             password_input = st.text_input("Enter Password:")
             submit_button = st.form_submit_button("Login")  # Pressing Enter submits the form
     
@@ -702,7 +822,7 @@ with tab5:
 
 
 # Plan B tab
-with tab6:
+with tab7:
     st.header("Plan B Questionaire")
     
     # Automatically get current date and time
@@ -775,11 +895,11 @@ with tab6:
 
 
 
-# Tab 7: Data Spreadsheets
-with tab7:
+# Tab 8: Data Spreadsheets
+with tab8:
     st.header("Data Spreadsheet Overview")
 
-    files = {"Products Distributed": csv_file, "Donated Products": donated_file, "Spoiled Foods": spoiled_file,
+    files = {"Walk In Menu": walk_in_menu, "Out of Stock Products": removed_products_file, "Products Distributed": csv_file, "Donated Products": donated_file, "Spoiled Foods": spoiled_file,
              "Menstrual Products": menstrual_file}
 
     for name, file_path in files.items():
